@@ -2,59 +2,94 @@ package impl
 
 import (
 	"errors"
-	"fmt"
+	"strings"
 )
 
+type QueryPart struct {
+	clause string
+	parts  []string
+	args   []any
+}
+
 type GqBuilderImpl struct {
-	finalQuery string
-	tmpQuery   [][]string
-	err        error
+	parts []*QueryPart
+	err   error
 }
 
-func (gq *GqBuilderImpl) Select(tableName string, params ...string) *GqBuilderImpl {
-	query := make([]string, 0, len(params)+1)
-	query = append(query, "SELECT ")
+func (gq *GqBuilderImpl) Select(columns ...string) *GqBuilderImpl {
+	part := &QueryPart{
+		clause: "SELECT",
+		parts:  []string{"SELECT "},
+	}
 
-	if len(params) != 0 {
-		for _, v := range params {
-			query = append(query, fmt.Sprintf("%s, ", v))
-		}
+	if len(columns) > 0 {
+		part.parts = append(part.parts, strings.Join(columns, ", "))
 	} else {
-		query = append(query, "* ")
+		part.parts = append(part.parts, "* ")
 	}
 
-	query = append(query, fmt.Sprintf("FROM %s ", tableName))
-
-	gq.qAppend(query)
+	gq.parts = append(gq.parts, part)
 	return gq
 }
 
-func (gq *GqBuilderImpl) qAppend(queryPart []string) *GqBuilderImpl {
-	if gq.tmpQuery == nil {
-		gq.tmpQuery = make([][]string, 0)
+func (gq *GqBuilderImpl) From(tableName string) *GqBuilderImpl {
+	part := &QueryPart{
+		clause: "FROM",
+		parts:  []string{"FROM "},
 	}
 
-	gq.tmpQuery = append(gq.tmpQuery, queryPart)
-	return gq
-}
-
-func (gq *GqBuilderImpl) Build() (string, error) {
-	if gq.tmpQuery == nil {
-		return "", errors.New("query is not init")
-	}
-
-	//TODO: err parsing
-
-	var resultQuery string
-	buildString(gq.tmpQuery, &resultQuery)
-
-	return resultQuery, nil
-}
-
-func buildString(sl [][]string, value *string) {
-	for _, s1 := range sl {
-		for _, s2 := range s1 {
-			*value += s2
+	if len(tableName) > 0 {
+		part.parts = append(part.parts, tableName)
+	} else {
+		if gq.err == nil {
+			gq.err = errors.New("table name is not provide")
+			return gq
 		}
 	}
+
+	gq.parts = append(gq.parts, part)
+	return gq
+}
+
+func (gq *GqBuilderImpl) Where(conditions string, args ...any) *GqBuilderImpl {
+
+	part := &QueryPart{
+		clause: "WHERE",
+		parts:  []string{"WHERE "},
+		args:   args,
+	}
+
+	if len(conditions) == 0 {
+		if gq.err == nil {
+			gq.err = errors.New("conditions in WHERE statement is not provide")
+			return gq
+		}
+	}
+
+	part.parts = append(part.parts, conditions)
+	gq.parts = append(gq.parts, part)
+	return gq
+}
+
+func (gq *GqBuilderImpl) Build() (string, any, error) {
+	if len(gq.parts) == 0 {
+		return "", nil, errors.New("query is not init")
+	}
+
+	if gq.err != nil {
+		return "", nil, gq.err
+	}
+
+	var (
+		sqlQuery strings.Builder
+		args     []any
+	)
+
+	for _, part := range gq.parts {
+		sqlQuery.WriteString(strings.Join(part.parts, ""))
+		sqlQuery.WriteString(" ")
+		args = append(args, part.args...)
+	}
+
+	return strings.TrimSpace(sqlQuery.String()), args, nil
 }
