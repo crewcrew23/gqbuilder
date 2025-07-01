@@ -32,6 +32,57 @@ func (gq *GqBuilderImpl) Select(columns ...string) *GqBuilderImpl {
 	return gq
 }
 
+func (gq *GqBuilderImpl) Insert(tableName string, columns ...string) *GqBuilderImpl {
+	part := &QueryPart{
+		clause: "INSERT",
+		parts:  []string{"INSERT INTO "},
+	}
+
+	if len(tableName) < 1 {
+		if gq.err == nil {
+			gq.err = errors.New("table name is not provide")
+			return gq
+		}
+	}
+
+	if len(columns) < 1 {
+		if gq.err == nil {
+			gq.err = errors.New("columns is not provide")
+			return gq
+		}
+	}
+
+	part.parts = append(part.parts, tableName)
+	part.parts = append(part.parts, " ( ")
+	part.parts = append(part.parts, strings.Join(columns, ", "))
+	part.parts = append(part.parts, " )")
+
+	gq.parts = append(gq.parts, part)
+	return gq
+}
+
+func (gq *GqBuilderImpl) Values(values string, args ...any) *GqBuilderImpl {
+	part := &QueryPart{
+		clause: "VALUES",
+		parts:  []string{"VALUES "},
+		args:   args,
+	}
+
+	if len(values) < 1 {
+		if gq.err == nil {
+			gq.err = errors.New("values is not provide")
+			return gq
+		}
+	}
+
+	part.parts = append(part.parts, "( ")
+	part.parts = append(part.parts, values)
+	part.parts = append(part.parts, " ) ")
+
+	gq.parts = append(gq.parts, part)
+	return gq
+}
+
 func (gq *GqBuilderImpl) From(tableName string) *GqBuilderImpl {
 	part := &QueryPart{
 		clause: "FROM",
