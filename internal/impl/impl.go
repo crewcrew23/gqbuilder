@@ -3,6 +3,8 @@ package impl
 import (
 	"errors"
 	"strings"
+
+	"github.com/crewcrew23/gqbuilder/pkg/interfaces"
 )
 
 type QueryPart struct {
@@ -16,7 +18,7 @@ type GqBuilderImpl struct {
 	err   error
 }
 
-func (gq *GqBuilderImpl) Select(columns ...string) *GqBuilderImpl {
+func (gq *GqBuilderImpl) Select(columns ...string) interfaces.GqBuilder {
 	part := &QueryPart{
 		clause: "SELECT",
 		parts:  []string{"SELECT "},
@@ -32,7 +34,7 @@ func (gq *GqBuilderImpl) Select(columns ...string) *GqBuilderImpl {
 	return gq
 }
 
-func (gq *GqBuilderImpl) Insert(tableName string, columns ...string) *GqBuilderImpl {
+func (gq *GqBuilderImpl) Insert(tableName string, columns ...string) interfaces.GqBuilder {
 	part := &QueryPart{
 		clause: "INSERT",
 		parts:  []string{"INSERT INTO "},
@@ -61,7 +63,7 @@ func (gq *GqBuilderImpl) Insert(tableName string, columns ...string) *GqBuilderI
 	return gq
 }
 
-func (gq *GqBuilderImpl) Values(values string, args ...any) *GqBuilderImpl {
+func (gq *GqBuilderImpl) Values(values string, args ...any) interfaces.GqBuilder {
 	part := &QueryPart{
 		clause: "VALUES",
 		parts:  []string{"VALUES "},
@@ -83,7 +85,7 @@ func (gq *GqBuilderImpl) Values(values string, args ...any) *GqBuilderImpl {
 	return gq
 }
 
-func (gq *GqBuilderImpl) From(tableName string) *GqBuilderImpl {
+func (gq *GqBuilderImpl) From(tableName string) interfaces.GqBuilder {
 	part := &QueryPart{
 		clause: "FROM",
 		parts:  []string{"FROM "},
@@ -102,7 +104,7 @@ func (gq *GqBuilderImpl) From(tableName string) *GqBuilderImpl {
 	return gq
 }
 
-func (gq *GqBuilderImpl) Where(conditions string, args ...any) *GqBuilderImpl {
+func (gq *GqBuilderImpl) Where(conditions string, args ...any) interfaces.GqBuilder {
 
 	part := &QueryPart{
 		clause: "WHERE",
